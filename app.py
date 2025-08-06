@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-@app.route('/snipes')
+@app.route("/snipes")
 def get_snipes():
     url = "https://api.skinport.com/v1/items?app_id=730&currency=EUR"
     response = requests.get(url)
@@ -23,6 +23,6 @@ def get_snipes():
 
     return jsonify(snipes)
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
