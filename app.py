@@ -32,4 +32,5 @@ def get_kilt_price():
         return jsonify({"error": "Failed to fetch price", "details": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
+
