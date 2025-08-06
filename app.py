@@ -1,44 +1,35 @@
 from flask import Flask, jsonify
 import requests
-import os
 
 app = Flask(__name__)
 
-@app.route("/")
-def index():
-    return "✅ RustSniper backend is running. Use /snipes to get discounted Rust skin deals."
-
 @app.route("/snipes")
-def get_snipes():
-    url = "https://api.skinport.com/v1/items?app_id=730&currency=EUR"
-    headers = {
-        "Accept": "application/json",
-        "User-Agent": "RustSniperBot/1.0"
+def get_kilt_price():
+    url = "https://steamcommunity.com/market/priceoverview/"
+    params = {
+        "country": "NO",
+        "currency": 1,  # USD: 1, Euro: 3, NOK: 9
+        "appid": 252490,
+        "market_hash_name": "Whiteout Kilt"
     }
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-    except requests.RequestException as e:
-        return jsonify({
-            "error": "Failed to fetch data from Skinport API",
-            "details": str(e)
-        }), 500
 
-    snipes = []
-    for item in data:
-        if item.get('min_price') and item.get('suggested_price'):
-            if item['min_price'] < 0.8 * item['suggested_price']:
-                snipes.append({
-                    "name": item['market_hash_name'],
-                    "min_price": round(item['min_price'], 2),
-                    "suggested_price": round(item['suggested_price'], 2),
-                    "link": f"https://skinport.com/item/{item['market_hash_name'].replace(' ', '%20')}"
-                })
+        if data.get("success"):
+            return jsonify({
+                "item": "Whiteout Kilt",
+                "lowest_price": data.get("lowest_price", "N/A"),
+                "median_price": data.get("median_price", "N/A"),
+                "volume": data.get("volume", "N/A")
+            })
+        else:
+            return jsonify({"error": "Steam API response was not successful"}), 500
 
-    return jsonify(snipes)
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch price", "details": str(e)}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
