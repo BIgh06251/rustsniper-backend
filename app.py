@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 import requests
+import os
 
 app = Flask(__name__)
 
@@ -11,7 +12,7 @@ def get_snipes():
     snipes = []
 
     for item in data:
-        if item['min_price'] and item['suggested_price']:
+        if item.get('min_price') and item.get('suggested_price'):
             if item['min_price'] < 0.8 * item['suggested_price']:
                 snipes.append({
                     "name": item['market_hash_name'],
@@ -22,9 +23,6 @@ def get_snipes():
 
     return jsonify(snipes)
 
-if __name__ == "__main__":
-    app.run(debug=True)
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
