@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import requests
 import os
 
@@ -6,16 +6,18 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "RustSniper API is running!"
+    return "✅ RustSniper API is running!"
 
 @app.route("/snipes")
-def get_kilt_price():
+def get_item_price():
+    item = request.args.get("item", "Whiteout Kilt")
+
     url = "https://steamcommunity.com/market/priceoverview/"
     params = {
         "country": "NO",
-        "currency": 1,  # USD: 1, Euro: 3, NOK: 9
+        "currency": 1,  # 1 = USD
         "appid": 252490,
-        "market_hash_name": "Whiteout Kilt"
+        "market_hash_name": item
     }
 
     try:
@@ -25,7 +27,7 @@ def get_kilt_price():
 
         if data.get("success"):
             return jsonify({
-                "item": "Whiteout Kilt",
+                "item": item,
                 "lowest_price": data.get("lowest_price", "N/A"),
                 "median_price": data.get("median_price", "N/A"),
                 "volume": data.get("volume", "N/A")
@@ -34,9 +36,12 @@ def get_kilt_price():
             return jsonify({"error": "Steam API response was not successful"}), 500
 
     except Exception as e:
-        return jsonify({"error": "Failed to fetch price", "details": str(e)}), 500
+        return jsonify({
+            "error": "Failed to fetch price",
+            "details": str(e)
+        }), 500
 
-# Bare kjør dette når du starter med `python app.py`, ikke med gunicorn
+# Lokalt kjør Flask, i prod kjører gunicorn dette uten denne blokken
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
