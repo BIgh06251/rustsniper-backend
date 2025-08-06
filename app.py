@@ -11,13 +11,19 @@ def index():
 @app.route("/snipes")
 def get_snipes():
     url = "https://api.skinport.com/v1/items?app_id=730&currency=EUR"
+    headers = {
+        "Accept": "application/json"
+    }
 
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raises an exception for HTTP errors
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
         data = response.json()
     except requests.RequestException as e:
-        return jsonify({"error": "Failed to fetch data from Skinport API", "details": str(e)}), 500
+        return jsonify({
+            "error": "Failed to fetch data from Skinport API",
+            "details": str(e)
+        }), 500
 
     snipes = []
     for item in data:
