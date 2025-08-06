@@ -12,7 +12,8 @@ def index():
 def get_snipes():
     url = "https://api.skinport.com/v1/items?app_id=730&currency=EUR"
     headers = {
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
 
     try:
