@@ -4,20 +4,29 @@ import os
 
 app = Flask(__name__)
 
+@app.route("/")
+def index():
+    return "✅ RustSniper backend is running. Use /snipes to get discounted Rust skin deals."
+
 @app.route("/snipes")
 def get_snipes():
     url = "https://api.skinport.com/v1/items?app_id=730&currency=EUR"
-    response = requests.get(url)
-    data = response.json()
-    snipes = []
 
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raises an exception for HTTP errors
+        data = response.json()
+    except requests.RequestException as e:
+        return jsonify({"error": "Failed to fetch data from Skinport API", "details": str(e)}), 500
+
+    snipes = []
     for item in data:
         if item.get('min_price') and item.get('suggested_price'):
             if item['min_price'] < 0.8 * item['suggested_price']:
                 snipes.append({
                     "name": item['market_hash_name'],
-                    "min_price": item['min_price'],
-                    "suggested_price": item['suggested_price'],
+                    "min_price": round(item['min_price'], 2),
+                    "suggested_price": round(item['suggested_price'], 2),
                     "link": f"https://skinport.com/item/{item['market_hash_name'].replace(' ', '%20')}"
                 })
 
