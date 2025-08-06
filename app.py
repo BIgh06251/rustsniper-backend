@@ -1,9 +1,11 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import requests
 import os
 import time
 
 app = Flask(__name__)
+CORS(app)  # 👈 Gjør at frontend får hente data uten CORS-feil
 
 @app.route("/")
 def home():
@@ -16,7 +18,6 @@ def get_item_price():
 
 @app.route("/snipes/all")
 def get_deals():
-    # Liste over Rust skins du vil følge med på
     items = [
         "Whiteout Kilt",
         "Tempered Mask",
@@ -47,7 +48,7 @@ def get_deals():
         except:
             continue
 
-        time.sleep(1)  # Steam API liker ikke spam
+        time.sleep(1)
 
     return jsonify({
         "count": len(deals),
