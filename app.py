@@ -1,18 +1,13 @@
 from flask import Flask, jsonify, request
-from flask_cors import CORS
 import requests
-import json
 import os
+import time
 
 app = Flask(__name__)
-CORS(app)
-
-with open("skins.json", encoding="utf-8") as f:
-    ALL_SKINS = json.load(f)
 
 @app.route("/")
 def home():
-    return "✅ RustSniper API is live!"
+    return "✅ RustSniper API is running!"
 
 @app.route("/search")
 def search_skin():
@@ -35,11 +30,31 @@ def search_skin():
 
 @app.route("/top10")
 def top_10_deals():
+    items = [
+        "Whiteout Facemask",
+        "Tempered Mask",
+        "Azul Hoodie",
+        "Plate Carrier",
+        "Blackout Gloves",
+        "No Mercy Hoodie",
+        "Arctic Wolf Pants",
+        "Cloth",
+        "High Quality Bag",
+        "Snowcamo Jacket",
+        "Heat Seeker Mp5",
+        "Sicnotype Meds",
+        "Forest Raiders Chestplate",
+        "Twitch Rivals Hoodie",
+        "Arctic Camo Pants"
+    ]
+
     deals = []
-    for item in ALL_SKINS[:200]:  # begrens til 200 for ytelse
+
+    for item in items:
         data = fetch_price_data(item)
         if not data or "lowest_price" not in data or "median_price" not in data:
             continue
+
         try:
             low = parse_price(data["lowest_price"])
             med = parse_price(data["median_price"])
@@ -53,6 +68,9 @@ def top_10_deals():
                 })
         except:
             continue
+
+        time.sleep(1)  # Ikke spam Steam
+
     deals.sort(key=lambda x: x["percent_below"], reverse=True)
     return jsonify({"count": len(deals[:10]), "deals": deals[:10]})
 
@@ -61,7 +79,12 @@ def parse_price(price):
 
 def fetch_price_data(item):
     url = "https://steamcommunity.com/market/priceoverview/"
-    params = {"country": "NO", "currency": 1, "appid": 252490, "market_hash_name": item}
+    params = {
+        "country": "NO",
+        "currency": 1,
+        "appid": 252490,
+        "market_hash_name": item
+    }
     try:
         response = requests.get(url, params=params, timeout=5)
         return response.json()
