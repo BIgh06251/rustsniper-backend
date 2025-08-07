@@ -48,17 +48,14 @@
       flex-wrap: wrap;
       justify-content: center;
     }
-    a {
-      color: #00aaff;
-      text-decoration: none;
-    }
   </style>
 </head>
 <body>
   <h1>RustSniper 🔫</h1>
   <p>Oppdag underprisede Rust skins i sanntid</p>
 
-  <input id="searchInput" type="text" placeholder="Søk etter skin..." />
+  <input id="searchInput" type="text" list="skinList" placeholder="Søk etter skin..." />
+  <datalist id="skinList"></datalist>
   <button onclick="searchSkin()">Søk</button>
 
   <div id="searchResult"></div>
@@ -72,25 +69,33 @@
       const data = await res.json();
       const container = document.getElementById("topDeals");
       container.innerHTML = "";
-
       data.deals.forEach((deal) => {
-        const steamLink = `https://steamcommunity.com/market/listings/252490/${encodeURIComponent(deal.item)}`;
         container.innerHTML += `
           <div class="deal">
             <strong>${deal.item}</strong><br />
             💵 Lowest: ${deal.lowest_price}<br />
             📊 Median: ${deal.median_price}<br />
             📉 Deviation: ${deal.percent_below}%<br />
-            📦 Volume: ${deal.volume}<br />
-            <a href="${steamLink}" target="_blank">🔗 View on Steam</a>
+            📦 Volume: ${deal.volume}
           </div>`;
+      });
+    }
+
+    async function loadSkins() {
+      const res = await fetch('/skins');
+      const skins = await res.json();
+      const datalist = document.getElementById("skinList");
+
+      skins.forEach((skin) => {
+        const option = document.createElement("option");
+        option.value = skin;
+        datalist.appendChild(option);
       });
     }
 
     async function searchSkin() {
       const query = document.getElementById("searchInput").value;
       if (!query) return;
-
       const res = await fetch(`/search?item=${encodeURIComponent(query)}`);
       const data = await res.json();
       const resultDiv = document.getElementById("searchResult");
@@ -98,21 +103,19 @@
       if (data.error) {
         resultDiv.innerHTML = `<p style="color: red;">Ikke funnet: "${query}"</p>`;
       } else {
-        const steamLink = `https://steamcommunity.com/market/listings/252490/${encodeURIComponent(data.item)}`;
         resultDiv.innerHTML = `
           <div class="deal">
             <strong>${data.item}</strong><br />
             💵 Lowest: ${data.lowest_price}<br />
             📊 Median: ${data.median_price}<br />
             📉 Deviation: ${data.percent_below}%<br />
-            📦 Volume: ${data.volume}<br />
-            <a href="${steamLink}" target="_blank">🔗 View on Steam</a>
+            📦 Volume: ${data.volume}
           </div>`;
       }
     }
 
-    // Kjør ved innlasting
     fetchTop10();
+    loadSkins();
   </script>
 </body>
 </html>
