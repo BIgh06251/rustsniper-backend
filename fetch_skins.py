@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+from bs4 import BeautifulSoup
 
 def fetch_all_rust_skins():
     skins = []
@@ -18,37 +19,36 @@ def fetch_all_rust_skins():
 
         try:
             r = requests.get(url, headers=headers)
-            print(f"\n🌐 Request til: {url}")
-            print(f"📦 Statuskode: {r.status_code}")
-            print(f"📄 Content-Type: {r.headers.get('Content-Type')}")
-            print(f"📊 Første 300 tegn av respons:\n{r.text[:300]}")
-
-            # Sjekk at det er gyldig JSON
-            try:
-                data = r.json()
-            except Exception as e:
-                print("❌ Klarte ikke parse JSON:", e)
+            if r.status_code != 200:
+                print(f"❌ Feil {r.status_code}: {r.text[:200]}")
                 break
 
-            if "results" not in data or not data["results"]:
-                print("❌ Ingen flere resultater eller feil med 'results'. Avslutter...")
+            data = r.json()
+            html = data.get("results_html", "")
+            if not html:
+                print("❌ Mangler results_html. Avslutter...")
                 break
 
-            for item in data["results"]:
-                name = item.get("name")
-                if name:
-                    skins.append(name)
+            soup = BeautifulSoup(html, "html.parser")
+            items = soup.select(".market_listing_item_name")
 
-            print(f"✅ Hentet {len(data['results'])} skins fra start={start}")
+            if not items:
+                print("❌ Fant ingen items. Avslutter...")
+                break
 
-            if len(data["results"]) < 100:
+            for tag in items:
+                name = tag.get_text(strip=True)
+                skins.append(name)
+
+            print(f"✅ Hentet {len(items)} skins fra start={start}")
+            if len(items) < 100:
                 break
 
             start += 100
             time.sleep(1.5)
 
         except Exception as e:
-            print(f"⚠️ Feil ved henting (start={start}):", e)
+            print(f"⚠️ Feil ved henting/parsing: {e}")
             break
 
     try:
@@ -56,7 +56,7 @@ def fetch_all_rust_skins():
             json.dump(skins, f, ensure_ascii=False, indent=2)
         print(f"✅ Lagret {len(skins)} skins til skins.json")
     except Exception as e:
-        print("❌ Klarte ikke lagre til skins.json:", e)
+        print("❌ Klarte ikke lagre:", e)
 
     return skins
 
