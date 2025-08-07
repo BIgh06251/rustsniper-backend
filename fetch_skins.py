@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 def fetch_all_rust_skins():
     skins = []
     start = 0
+    max_skins = 5000  # Steam har ca. 4500–5000 Rust skins
+
     print("🔄 Starter henting av Rust skins fra Steam...")
 
     headers = {
@@ -16,6 +18,7 @@ def fetch_all_rust_skins():
 
     while True:
         url = f"https://steamcommunity.com/market/search/render/?query=&start={start}&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=252490"
+        print(f"\n🌐 Request til: {url}")
 
         try:
             r = requests.get(url, headers=headers)
@@ -33,19 +36,22 @@ def fetch_all_rust_skins():
             items = soup.select(".market_listing_item_name")
 
             if not items:
-                print("❌ Fant ingen items. Avslutter...")
+                print("❌ Fant ingen items på start =", start)
                 break
 
             for tag in items:
                 name = tag.get_text(strip=True)
-                skins.append(name)
+                if name not in skins:
+                    skins.append(name)
 
-            print(f"✅ Hentet {len(items)} skins fra start={start}")
-            if len(items) < 100:
+            print(f"✅ Hentet {len(items)} skins fra start={start} (totalt: {len(skins)})")
+
+            if len(items) < 100 or start >= max_skins:
+                print("🛑 Ingen flere resultater eller nådd maksgrense.")
                 break
 
             start += 100
-            time.sleep(1.5)
+            time.sleep(1.5)  # Unngå rate limiting
 
         except Exception as e:
             print(f"⚠️ Feil ved henting/parsing: {e}")
