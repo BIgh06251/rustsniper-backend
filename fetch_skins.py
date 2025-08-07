@@ -5,7 +5,7 @@ import time
 def fetch_all_rust_skins():
     skins = []
     start = 0
-    max_skins = 5000  # Steam har ca. 4500–5000 Rust skins
+    max_pages = 50  # max 100 * 50 = 5000 skins
 
     print("🔄 Starter henting av Rust skins fra Steam...")
 
@@ -17,7 +17,6 @@ def fetch_all_rust_skins():
 
     while True:
         url = f"https://steamcommunity.com/market/search/render/?query=&start={start}&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=252490"
-        print(f"\n🌐 Request til: {url}")
 
         try:
             r = requests.get(url, headers=headers)
@@ -26,34 +25,28 @@ def fetch_all_rust_skins():
                 break
 
             data = r.json()
-            html = data.get("results_html", "")
-            if not html:
-                print("❌ Mangler results_html. Avslutter...")
+
+            # Steam returnerer ikke "results" uten login – da avslutter vi
+            if "results" not in data or not data["results"]:
+                print("❌ Ingen resultater i JSON. Mulig blokkert av Steam.")
                 break
 
-            soup = BeautifulSoup(html, "html.parser")
-            items = soup.select(".market_listing_item_name")
-
-            if not items:
-                print("❌ Fant ingen items på start =", start)
-                break
-
-            for tag in items:
-                name = tag.get_text(strip=True)
-                if name not in skins:
+            for item in data["results"]:
+                name = item.get("name")
+                if name and name not in skins:
                     skins.append(name)
 
-            print(f"✅ Hentet {len(items)} skins fra start={start} (totalt: {len(skins)})")
+            print(f"✅ Hentet {len(data['results'])} skins (totalt: {len(skins)}) fra start={start}")
 
-            if len(items) < 100 or start >= max_skins:
-                print("🛑 Ingen flere resultater eller nådd maksgrense.")
+            if len(data["results"]) < 100 or start >= max_pages * 100:
+                print("🛑 Ferdig med scraping.")
                 break
 
             start += 100
-            time.sleep(1.5)  # Unngå rate limiting
+            time.sleep(1.5)
 
         except Exception as e:
-            print(f"⚠️ Feil ved henting/parsing: {e}")
+            print(f"⚠️ Feil ved henting: {e}")
             break
 
     try:
@@ -61,7 +54,7 @@ def fetch_all_rust_skins():
             json.dump(skins, f, ensure_ascii=False, indent=2)
         print(f"✅ Lagret {len(skins)} skins til skins.json")
     except Exception as e:
-        print("❌ Klarte ikke lagre:", e)
+        print("❌ Klarte ikke lagre skins.json:", e)
 
     return skins
 
