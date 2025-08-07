@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RustSniper 🔫</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #f2f2f2;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
+    }
+    input {
+      width: 250px;
+      background: #222;
+      color: #fff;
+    }
+    button {
+      background-color: #00aaff;
+      color: #fff;
+      cursor: pointer;
+    }
+    .deal {
+      background: #1c1c1c;
+      padding: 15px;
+      margin: 10px auto;
+      max-width: 400px;
+      border-radius: 10px;
+      text-align: left;
+      box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>RustSniper 🔫</h1>
+  <p>Oppdag underprisede Rust skins i sanntid</p>
+
+  <input id="searchInput" type="text" list="skinList" placeholder="Søk etter skin..." />
+  <datalist id="skinList"></datalist>
+  <button onclick="searchSkin()">Søk</button>
+
+  <div id="searchResult"></div>
+
+  <h2>🔥 Top 10 Deals</h2>
+  <div class="container" id="topDeals"></div>
+
+  <script>
+    async function fetchTop10() {
+      const res = await fetch("/top10");
+      const data = await res.json();
+      const container = document.getElementById("topDeals");
+      container.innerHTML = "";
+      data.deals.forEach((deal) => {
+        container.innerHTML += `
+          <div class="deal">
+            <strong>${deal.item}</strong><br />
+            💵 Lowest: ${deal.lowest_price}<br />
+            📊 Median: ${deal.median_price}<br />
+            📉 Deviation: ${deal.percent_below}%<br />
+            📦 Volume: ${deal.volume}
+          </div>`;
+      });
+    }
+
+    async function loadSkins() {
+      const res = await fetch('/skins');
+      const skins = await res.json();
+      const datalist = document.getElementById("skinList");
+
+      skins.forEach((skin) => {
+        const option = document.createElement("option");
+        option.value = skin;
+        datalist.appendChild(option);
+      });
+    }
+
+    async function searchSkin() {
+      const query = document.getElementById("searchInput").value;
+      if (!query) return;
+      const res = await fetch(`/search?item=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      const resultDiv = document.getElementById("searchResult");
+
+      if (data.error) {
+        resultDiv.innerHTML = `<p style="color: red;">Ikke funnet: "${query}"</p>`;
+      } else {
+        resultDiv.innerHTML = `
+          <div class="deal">
+            <strong>${data.item}</strong><br />
+            💵 Lowest: ${data.lowest_price}<br />
+            📊 Median: ${data.median_price}<br />
+            📉 Deviation: ${data.percent_below}%<br />
+            📦 Volume: ${data.volume}
+          </div>`;
+      }
+    }
+
+    fetchTop10();
+    loadSkins();
+  </script>
+</body>
+</html>
