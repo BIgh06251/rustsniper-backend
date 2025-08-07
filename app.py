@@ -5,9 +5,14 @@ import os
 
 app = Flask(__name__)
 
-# Last inn skins fra fil
-with open("skins.json", "r", encoding="utf-8") as f:
-    all_items = json.load(f)
+# Trygg lasting av skins.json med fallback
+try:
+    with open("skins.json", "r", encoding="utf-8") as f:
+        all_items = json.load(f)
+    print(f"✅ Laster inn {len(all_items)} skins fra skins.json")
+except Exception as e:
+    print("❌ Klarte ikke laste skins.json:", e)
+    all_items = []
 
 @app.route("/")
 def home():
@@ -20,7 +25,7 @@ def get_skins():
 @app.route("/top10")
 def top10():
     deals = []
-    for item in all_items[:50]:
+    for item in all_items[:50]:  # Sjekk de 50 første skinene
         try:
             url = f"https://steamcommunity.com/market/priceoverview/?country=NO&currency=1&appid=252490&market_hash_name={item}"
             r = requests.get(url)
@@ -38,7 +43,8 @@ def top10():
                     "percent_below": deviation,
                     "volume": data.get("volume", "N/A")
                 })
-        except Exception:
+        except Exception as e:
+            print(f"❌ Feil ved henting av data for {item}: {e}")
             continue
 
     sorted_deals = sorted(deals, key=lambda x: x["percent_below"])
@@ -50,23 +56,26 @@ def search():
     if not query:
         return jsonify({"error": "No item provided"}), 400
 
-    url = f"https://steamcommunity.com/market/priceoverview/?country=NO&currency=1&appid=252490&market_hash_name={query}"
-    r = requests.get(url)
-    data = r.json()
+    try:
+        url = f"https://steamcommunity.com/market/priceoverview/?country=NO&currency=1&appid=252490&market_hash_name={query}"
+        r = requests.get(url)
+        data = r.json()
 
-    if "lowest_price" in data and "median_price" in data:
-        lowest = float(data["lowest_price"].replace("$", "").replace(",", ""))
-        median = float(data["median_price"].replace("$", "").replace(",", ""))
-        deviation = round((lowest - median) / median * 100, 2)
-        return jsonify({
-            "item": query,
-            "lowest_price": data["lowest_price"],
-            "median_price": data["median_price"],
-            "percent_below": deviation,
-            "volume": data.get("volume", "N/A")
-        })
-    else:
-        return jsonify({"error": "Skin not found"}), 404
+        if "lowest_price" in data and "median_price" in data:
+            lowest = float(data["lowest_price"].replace("$", "").replace(",", ""))
+            median = float(data["median_price"].replace("$", "").replace(",", ""))
+            deviation = round((lowest - median) / median * 100, 2)
+            return jsonify({
+                "item": query,
+                "lowest_price": data["lowest_price"],
+                "median_price": data["median_price"],
+                "percent_below": deviation,
+                "volume": data.get("volume", "N/A")
+            })
+        else:
+            return jsonify({"error": "Skin not found"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Request failed: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
