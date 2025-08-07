@@ -26,7 +26,7 @@ def get_all_snipes():
         try:
             lowest = float(price_data["lowest_price"].replace("$", "").replace(" USD", ""))
             median = float(price_data["median_price"].replace("$", "").replace(" USD", ""))
-            if lowest < 0.7 * median:
+            if lowest < 1.1 * median:
                 deals.append({
                     "item": name,
                     "lowest_price": price_data["lowest_price"],
