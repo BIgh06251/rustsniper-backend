@@ -1,7 +1,6 @@
 import requests
 import json
 import time
-from bs4 import BeautifulSoup
 
 def fetch_all_rust_skins():
     skins = []
