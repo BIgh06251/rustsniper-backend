@@ -29,5 +29,14 @@ def fetch_all_rust_skins():
 
     print(f"Hentet {len(skins)} Rust skins.")
 
+skins = fetch_skins_from_steam()  # eller hva funksjonen heter
+
+print("Antall skins funnet:", len(skins))
+if skins:
+    print("Første skin:", skins[0])
+else:
+    print("Ingen skins ble hentet.")
+
+
 if __name__ == "__main__":
     fetch_all_rust_skins()
