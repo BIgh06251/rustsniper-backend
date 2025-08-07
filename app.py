@@ -1,13 +1,13 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 import requests
 import os
 import time
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='.')
 
 @app.route("/")
 def home():
-    return "✅ RustSniper API is running!"
+    return send_from_directory('.', 'index.html')
 
 @app.route("/search")
 def search_skin():
@@ -69,7 +69,7 @@ def top_10_deals():
         except:
             continue
 
-        time.sleep(1)  # Ikke spam Steam
+        time.sleep(1)  # Unngå å spamme Steam
 
     deals.sort(key=lambda x: x["percent_below"], reverse=True)
     return jsonify({"count": len(deals[:10]), "deals": deals[:10]})
