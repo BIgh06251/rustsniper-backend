@@ -1,61 +1,67 @@
-import requests
-import json
-import time
+import requests, json, time, re
+from urllib.parse import unquote
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json",
+    "Referer": "https://steamcommunity.com/market/search?appid=252490",
+}
 
 def fetch_all_rust_skins():
-    skins = []
-    start = 0
-    max_pages = 50  # max 100 * 50 = 5000 skins
-
+    skins, start = [], 0
     print("🔄 Starter henting av Rust skins fra Steam...")
 
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept': 'application/json',
-        'Referer': 'https://steamcommunity.com/market/search?appid=252490'
-    }
-
     while True:
-        url = f"https://steamcommunity.com/market/search/render/?query=&start={start}&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=252490"
-
-        try:
-            r = requests.get(url, headers=headers)
-            if r.status_code != 200:
-                print(f"❌ Feil {r.status_code}: {r.text[:200]}")
-                break
-
-            data = r.json()
-
-            # Steam returnerer ikke "results" uten login – da avslutter vi
-            if "results" not in data or not data["results"]:
-                print("❌ Ingen resultater i JSON. Mulig blokkert av Steam.")
-                break
-
-            for item in data["results"]:
-                name = item.get("name")
-                if name and name not in skins:
-                    skins.append(name)
-
-            print(f"✅ Hentet {len(data['results'])} skins (totalt: {len(skins)}) fra start={start}")
-
-            if len(data["results"]) < 100 or start >= max_pages * 100:
-                print("🛑 Ferdig med scraping.")
-                break
-
-            start += 100
-            time.sleep(1.5)
-
-        except Exception as e:
-            print(f"⚠️ Feil ved henting: {e}")
+        url = (
+            "https://steamcommunity.com/market/search/render/"
+            f"?query=&start={start}&count=100&search_descriptions=0"
+            "&sort_column=popular&sort_dir=desc&appid=252490"
+        )
+        r = requests.get(url, headers=HEADERS, timeout=15)
+        if r.status_code != 200:
+            print(f"❌ Feil {r.status_code}: {r.text[:200]}")
             break
 
-    try:
-        with open("skins.json", "w", encoding="utf-8") as f:
-            json.dump(skins, f, ensure_ascii=False, indent=2)
-        print(f"✅ Lagret {len(skins)} skins til skins.json")
-    except Exception as e:
-        print("❌ Klarte ikke lagre skins.json:", e)
+        data = r.json()
+        html = (data.get("results_html") or "").strip()
+        total = data.get("total_count", 0)
 
+        if not html:
+            print("❌ Tom HTML i results_html – stopper.")
+            break
+
+        # Prefer exact data-hash-name (present in modern Steam markup)
+        names = re.findall(r'data-hash-name="([^"]+)"', html)
+
+        # Fallback from listing URLs
+        if not names:
+            names = [unquote(m) for m in re.findall(r'/market/listings/252490/([^"?]+)', html)]
+
+        if not names:
+            print("❌ Fant ingen navn på denne siden – stopper.")
+            break
+
+        added = 0
+        for n in names:
+            if n not in skins:
+                skins.append(n)
+                added += 1
+
+        print(f"✅ start={start}: fant {len(names)} (nye: {added}) | totalt unike: {len(skins)}")
+
+        start += 100
+        # Stop if we've paged past total_count or reached a sane cap
+        if total and start >= total:
+            break
+        if start >= 5000:
+            break
+
+        time.sleep(1.5)
+
+    with open("skins.json", "w", encoding="utf-8") as f:
+        json.dump(skins, f, ensure_ascii=False, indent=2)
+
+    print(f"✅ Lagret {len(skins)} skins til skins.json")
     return skins
 
 if __name__ == "__main__":
